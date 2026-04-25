@@ -1,0 +1,33 @@
+node_modules/
+dist/
+.next/
+.cache/
+.vite/
+
+# 環境變數
+.env
+.env.local
+.env.*.local
+
+# 資料庫
+*.sqlite
+*.sqlite3
+*.db
+
+# 上傳的圖片
+uploads/
+
+# macOS
+.DS_Store
+._*
+Thumbs.db
+
+# 日誌
+*.log
+npm-debug.log*
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
+.gstack/

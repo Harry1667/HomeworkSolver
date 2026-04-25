@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  #root {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* 串流打字游標 */
+.streaming-cursor::after {
+  content: '▍';
+  animation: blink 0.7s infinite;
+  color: #6366f1;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Markdown 樣式（AI 回覆） */
+.prose-hw strong {
+  @apply font-semibold text-slate-900 dark:text-slate-100;
+}
+.prose-hw p {
+  @apply mb-3 leading-relaxed;
+}
+.prose-hw ul, .prose-hw ol {
+  @apply pl-5 mb-3 space-y-1;
+}
+.prose-hw ul { list-style: disc; }
+.prose-hw ol { list-style: decimal; }
+.prose-hw code {
+  @apply bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sm font-mono text-indigo-700 dark:text-indigo-300;
+}
+.prose-hw pre {
+  @apply bg-slate-100 dark:bg-slate-900 rounded-lg p-3 mb-3 overflow-x-auto;
+}
+.prose-hw pre code {
+  @apply bg-transparent p-0;
+}
+.prose-hw h1, .prose-hw h2, .prose-hw h3 {
+  @apply font-bold mb-2 mt-4 text-slate-900 dark:text-slate-100;
+}
+.prose-hw h1 { @apply text-xl; }
+.prose-hw h2 { @apply text-lg; }
+.prose-hw h3 { @apply text-base; }
+
+/* 捲動條 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
