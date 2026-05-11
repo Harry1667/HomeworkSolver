@@ -12,7 +12,10 @@ dist/
 # 資料庫
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
 *.db
+database/
 
 # 上傳的圖片
 uploads/

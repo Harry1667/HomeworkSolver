@@ -31,8 +31,8 @@ if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true })
 
 // ── SQLite（bun:sqlite API）──────────────────────────────
 const db = new Database(join(DB_DIR, 'homeworksolver.sqlite'))
-db.run('PRAGMA journal_mode = WAL')
-db.run('PRAGMA foreign_keys = ON')
+db.pragma('journal_mode = WAL')
+db.pragma('foreign_keys = ON')
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -145,7 +145,7 @@ db.exec(`
 // 既有資料庫遷移
 try { db.exec('ALTER TABLE conversations ADD COLUMN rating INTEGER') } catch {}
 
-// ── DB helpers（bun:sqlite 用 db.query().method()）────────
+// ── DB helpers（bun:sqlite 用 db.prepare().method()）────────
 function parseUser(u) {
   if (!u) return u
   let scores = null
@@ -157,53 +157,53 @@ function parseUser(u) {
 }
 
 const q = {
-  allUsers:    db.query('SELECT * FROM users ORDER BY created_at DESC'),
-  userById:    db.query('SELECT * FROM users WHERE id = ?'),
-  insertUser:  db.query('INSERT INTO users (name, grade, score) VALUES ($name, $grade, $score)'),
-  updateUser:  db.query('UPDATE users SET name = $name, grade = $grade, score = $score WHERE id = $id'),
-  deleteUser:  db.query('DELETE FROM users WHERE id = ?'),
+  allUsers:    db.prepare('SELECT * FROM users ORDER BY created_at DESC'),
+  userById:    db.prepare('SELECT * FROM users WHERE id = ?'),
+  insertUser:  db.prepare('INSERT INTO users (name, grade, score) VALUES ($name, $grade, $score)'),
+  updateUser:  db.prepare('UPDATE users SET name = $name, grade = $grade, score = $score WHERE id = $id'),
+  deleteUser:  db.prepare('DELETE FROM users WHERE id = ?'),
 
-  conversations: db.query(
+  conversations: db.prepare(
     'SELECT * FROM conversations WHERE user_id = ? AND subject = ? ORDER BY created_at DESC LIMIT 30'
   ),
-  convById:    db.query('SELECT * FROM conversations WHERE id = ?'),
-  insertConv:  db.query('INSERT INTO conversations (user_id, subject, title) VALUES ($user_id, $subject, $title)'),
-  updateConvRating: db.query('UPDATE conversations SET rating = $rating WHERE id = $id'),
-  deleteConv:  db.query('DELETE FROM conversations WHERE id = ?'),
-  updateScore: db.query('UPDATE users SET score = $score WHERE id = $id'),
+  convById:    db.prepare('SELECT * FROM conversations WHERE id = ?'),
+  insertConv:  db.prepare('INSERT INTO conversations (user_id, subject, title) VALUES ($user_id, $subject, $title)'),
+  updateConvRating: db.prepare('UPDATE conversations SET rating = $rating WHERE id = $id'),
+  deleteConv:  db.prepare('DELETE FROM conversations WHERE id = ?'),
+  updateScore: db.prepare('UPDATE users SET score = $score WHERE id = $id'),
 
-  messages:    db.query('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'),
-  insertMsg:   db.query('INSERT INTO messages (conversation_id, role, content, image_name) VALUES ($conversation_id, $role, $content, $image_name)'),
+  messages:    db.prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'),
+  insertMsg:   db.prepare('INSERT INTO messages (conversation_id, role, content, image_name) VALUES ($conversation_id, $role, $content, $image_name)'),
 
-  allSubjectRules: db.query('SELECT * FROM subject_rules'),
-  subjectRuleBy:   db.query('SELECT * FROM subject_rules WHERE subject = ?'),
-  upsertSubjectRule: db.query(`
+  allSubjectRules: db.prepare('SELECT * FROM subject_rules'),
+  subjectRuleBy:   db.prepare('SELECT * FROM subject_rules WHERE subject = ?'),
+  upsertSubjectRule: db.prepare(`
     INSERT INTO subject_rules (subject, extra_rules) VALUES ($subject, $extra_rules)
     ON CONFLICT(subject) DO UPDATE SET extra_rules = excluded.extra_rules
   `),
 
   // 段考成績
-  examScoresByUser:    db.query('SELECT * FROM exam_scores WHERE user_id = ? ORDER BY exam_date ASC, created_at ASC'),
-  insertExamScore:     db.query('INSERT INTO exam_scores (user_id, subject, exam_name, score, exam_date) VALUES ($user_id, $subject, $exam_name, $score, $exam_date)'),
-  deleteExamScore:     db.query('DELETE FROM exam_scores WHERE id = ?'),
-  latestExamScore:     db.query('SELECT score FROM exam_scores WHERE user_id = ? AND subject = ? ORDER BY exam_date DESC, created_at DESC LIMIT 1'),
+  examScoresByUser:    db.prepare('SELECT * FROM exam_scores WHERE user_id = ? ORDER BY exam_date ASC, created_at ASC'),
+  insertExamScore:     db.prepare('INSERT INTO exam_scores (user_id, subject, exam_name, score, exam_date) VALUES ($user_id, $subject, $exam_name, $score, $exam_date)'),
+  deleteExamScore:     db.prepare('DELETE FROM exam_scores WHERE id = ?'),
+  latestExamScore:     db.prepare('SELECT score FROM exam_scores WHERE user_id = ? AND subject = ? ORDER BY exam_date DESC, created_at DESC LIMIT 1'),
 
   // AI 弱點
-  weaknessesByUser:    db.query('SELECT * FROM subject_weaknesses WHERE user_id = ?'),
-  weaknessBySubject:   db.query('SELECT * FROM subject_weaknesses WHERE user_id = ? AND subject = ?'),
-  upsertWeakness:      db.query(`
+  weaknessesByUser:    db.prepare('SELECT * FROM subject_weaknesses WHERE user_id = ?'),
+  weaknessBySubject:   db.prepare('SELECT * FROM subject_weaknesses WHERE user_id = ? AND subject = ?'),
+  upsertWeakness:      db.prepare(`
     INSERT INTO subject_weaknesses (user_id, subject, content, updated_at)
     VALUES ($user_id, $subject, $content, datetime('now'))
     ON CONFLICT(user_id, subject) DO UPDATE SET content = excluded.content, updated_at = datetime('now')
   `),
 
   // 應用程式設定
-  getSetting:    db.query('SELECT value FROM app_settings WHERE key = ?'),
-  upsertSetting: db.query(`INSERT INTO app_settings (key, value) VALUES ($key, $value)
+  getSetting:    db.prepare('SELECT value FROM app_settings WHERE key = ?'),
+  upsertSetting: db.prepare(`INSERT INTO app_settings (key, value) VALUES ($key, $value)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value`),
 
   // 近期對話訊息（供弱點分析用）
-  recentMsgsForSubject: db.query(`
+  recentMsgsForSubject: db.prepare(`
     SELECT m.role, m.content FROM messages m
     JOIN conversations c ON c.id = m.conversation_id
     WHERE c.user_id = ? AND c.subject = ?
@@ -211,22 +211,22 @@ const q = {
   `),
 
   // 教學策略
-  getStrategy:    db.query('SELECT strategy FROM teaching_strategies WHERE user_id = ? AND subject = ?'),
-  allStrategies:  db.query('SELECT subject, strategy, updated_at FROM teaching_strategies WHERE user_id = ? AND strategy != ""'),
-  upsertStrategy: db.query(`
+  getStrategy:    db.prepare('SELECT strategy FROM teaching_strategies WHERE user_id = ? AND subject = ?'),
+  allStrategies:  db.prepare('SELECT subject, strategy, updated_at FROM teaching_strategies WHERE user_id = ? AND strategy != ""'),
+  upsertStrategy: db.prepare(`
     INSERT INTO teaching_strategies (user_id, subject, strategy, updated_at)
     VALUES ($user_id, $subject, $strategy, datetime('now'))
     ON CONFLICT(user_id, subject) DO UPDATE SET strategy = excluded.strategy, updated_at = datetime('now')
   `),
 
   // 家長 token
-  getParentToken:    db.query('SELECT token FROM parent_tokens WHERE user_id = ?'),
-  upsertParentToken: db.query(`INSERT INTO parent_tokens (user_id, token) VALUES ($user_id, $token)
+  getParentToken:    db.prepare('SELECT token FROM parent_tokens WHERE user_id = ?'),
+  upsertParentToken: db.prepare(`INSERT INTO parent_tokens (user_id, token) VALUES ($user_id, $token)
     ON CONFLICT(user_id) DO UPDATE SET token = excluded.token`),
-  getUserByToken:    db.query('SELECT u.* FROM users u JOIN parent_tokens p ON p.user_id = u.id WHERE p.token = ?'),
+  getUserByToken:    db.prepare('SELECT u.* FROM users u JOIN parent_tokens p ON p.user_id = u.id WHERE p.token = ?'),
 
   // 使用量統計
-  usageStatsByUser:  db.query(`
+  usageStatsByUser:  db.prepare(`
     SELECT c.subject,
       COUNT(DISTINCT c.id) as conv_count,
       COUNT(m.id) as msg_count
@@ -237,14 +237,14 @@ const q = {
   `),
 
   // 錯題本
-  wrongAnswersByUser:    db.query('SELECT * FROM wrong_answers WHERE user_id = ? ORDER BY created_at DESC'),
-  wrongAnswersBySubject: db.query('SELECT * FROM wrong_answers WHERE user_id = ? AND subject = ? ORDER BY created_at DESC'),
-  insertWrongAnswer:     db.query('INSERT INTO wrong_answers (user_id, subject, conversation_id, question, ai_answer, note) VALUES ($user_id, $subject, $conv_id, $question, $ai_answer, $note)'),
-  deleteWrongAnswer:     db.query('DELETE FROM wrong_answers WHERE id = ? AND user_id = ?'),
+  wrongAnswersByUser:    db.prepare('SELECT * FROM wrong_answers WHERE user_id = ? ORDER BY created_at DESC'),
+  wrongAnswersBySubject: db.prepare('SELECT * FROM wrong_answers WHERE user_id = ? AND subject = ? ORDER BY created_at DESC'),
+  insertWrongAnswer:     db.prepare('INSERT INTO wrong_answers (user_id, subject, conversation_id, question, ai_answer, note) VALUES ($user_id, $subject, $conv_id, $question, $ai_answer, $note)'),
+  deleteWrongAnswer:     db.prepare('DELETE FROM wrong_answers WHERE id = ? AND user_id = ?'),
 
   // 整體學習檔案
-  getLearningProfile:    db.query('SELECT profile FROM user_learning_profiles WHERE user_id = ?'),
-  upsertLearningProfile: db.query(`
+  getLearningProfile:    db.prepare('SELECT profile FROM user_learning_profiles WHERE user_id = ?'),
+  upsertLearningProfile: db.prepare(`
     INSERT INTO user_learning_profiles (user_id, profile, updated_at)
     VALUES ($user_id, $profile, datetime('now'))
     ON CONFLICT(user_id) DO UPDATE SET profile = excluded.profile, updated_at = datetime('now')
