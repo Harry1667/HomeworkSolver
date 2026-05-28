@@ -20,3 +20,28 @@ cd 02-web
 npm install
 npm run dev
 ```
+
+---
+
+## English
+
+An AI homework helper. Students submit problems and get step-by-step solutions; parents use a dashboard to set per-subject rules and review what their kid has been working on.
+
+### Features
+- Multi-role accounts (student / parent)
+- Parent dashboard: manage subject rules, review solving history
+- Mistake notebook: log wrong answers for later review
+- Math formula rendering (KaTeX)
+- Image upload for problems
+
+### Tech stack
+- React 19 + TypeScript + Vite
+- Express.js (BFF) + Bun
+- KaTeX + Recharts + Zustand
+
+### Quick start
+```bash
+cd 02-web
+npm install
+npm run dev
+```
